@@ -1,0 +1,6 @@
+# BaseHider 1.4.0
+# Jede Zone wird ausschließlich anhand der eigenen Base des Spielers berechnet.
+# 0-20: versteckt und grün beim Betreten
+# >20-<25: blau, weiterhin versteckt
+# 25-30: gelb und sichtbar
+# >30: sichtbar

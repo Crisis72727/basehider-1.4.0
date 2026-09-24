@@ -1,0 +1,22 @@
+name: BaseHider
+version: 1.4.0
+main: de.crisis.basehider.BaseHiderPlugin
+api-version: '1.21'
+
+commands:
+  setbase:
+    description: Setzt die eigene Base.
+    usage: /setbase
+    permission: basehider.setbase
+  removebase:
+    description: Entfernt die eigene Base.
+    usage: /removebase
+    permission: basehider.removebase
+
+permissions:
+  basehider.setbase:
+    description: Erlaubt das Setzen der eigenen Base.
+    default: true
+  basehider.removebase:
+    description: Erlaubt das Entfernen der eigenen Base.
+    default: true
