@@ -44,12 +44,14 @@ public final class BaseHiderPlugin extends JavaPlugin implements Listener, Comma
     private void loadBases() {
         ConfigurationSection section = getConfig().getConfigurationSection("bases");
         if (section == null) return;
+
         for (String key : section.getKeys(false)) {
             try {
                 UUID uuid = UUID.fromString(key);
                 String path = "bases." + key;
                 String worldName = getConfig().getString(path + ".world");
                 if (worldName == null || Bukkit.getWorld(worldName) == null) continue;
+
                 bases.put(uuid, new Location(Bukkit.getWorld(worldName),
                         getConfig().getInt(path + ".x"),
                         getConfig().getInt(path + ".y"),
@@ -124,17 +126,17 @@ public final class BaseHiderPlugin extends JavaPlugin implements Listener, Comma
     private void updatePlayer(Player player, boolean baseWasJustSet) {
         Zone oldZone = zones.getOrDefault(player.getUniqueId(), Zone.OUTSIDE);
         Zone newZone = calculateZone(player);
-
         handleTransition(player, oldZone, newZone, baseWasJustSet);
         zones.put(player.getUniqueId(), newZone);
     }
 
-    /** Nur die eigene Base wird berücksichtigt. OP und Nicht-OP laufen durch dieselbe Logik. */
     private Zone calculateZone(Player player) {
         Location base = bases.get(player.getUniqueId());
         Location location = player.getLocation();
         if (base == null || base.getWorld() == null
-                || !base.getWorld().equals(location.getWorld())) return Zone.OUTSIDE;
+                || !base.getWorld().equals(location.getWorld())) {
+            return Zone.OUTSIDE;
+        }
 
         int dx = Math.abs(location.getBlockX() - base.getBlockX());
         int dz = Math.abs(location.getBlockZ() - base.getBlockZ());
@@ -147,53 +149,22 @@ public final class BaseHiderPlugin extends JavaPlugin implements Listener, Comma
     }
 
     private void handleTransition(Player player, Zone oldZone, Zone newZone, boolean baseWasJustSet) {
+        if (oldZone == newZone && !baseWasJustSet) return;
+
         if (baseWasJustSet) {
             if (newZone == Zone.HIDDEN) {
                 hidePlayer(player);
                 player.sendMessage(ChatColor.GREEN + "Du bist jetzt unsichtbar.");
-            } else if (newZone == Zone.BLUE) {
-                hidePlayer(player);
-                player.sendMessage(ChatColor.BLUE + "Du bist gleich sichtbar.");
-            } else if (newZone == Zone.YELLOW) {
-                player.sendMessage(ChatColor.YELLOW + "Du bist gleich unsichtbar.");
             }
             return;
         }
 
-        if (oldZone == newZone) return;
-
-        // Außen -> Gelb bei 30.
-        if (oldZone == Zone.OUTSIDE && newZone == Zone.YELLOW) {
-            player.sendMessage(ChatColor.YELLOW + "Du bist gleich unsichtbar.");
-        }
-
-        // Gelb -> Blau beim Betreten der Zone 20-25.
-        if (oldZone == Zone.YELLOW && newZone == Zone.BLUE) {
-            hidePlayer(player);
-            player.sendMessage(ChatColor.BLUE + "Du bist gleich sichtbar.");
-        }
-
-        // Blau -> Hidden: grün.
         if (newZone == Zone.HIDDEN && oldZone != Zone.HIDDEN) {
             hidePlayer(player);
             player.sendMessage(ChatColor.GREEN + "Du bist jetzt unsichtbar.");
             return;
         }
 
-        // Beim Herausgehen aus Blau bei 25: rot; der Spieler wird sichtbar.
-        if (oldZone == Zone.BLUE && newZone == Zone.YELLOW) {
-            showPlayer(player);
-            player.sendMessage(ChatColor.RED + "Du bist jetzt sichtbar.");
-            return;
-        }
-
-        // Hidden -> Blau bei 20: blau, noch versteckt.
-        if (oldZone == Zone.HIDDEN && newZone == Zone.BLUE) {
-            player.sendMessage(ChatColor.BLUE + "Du bist gleich sichtbar.");
-            return;
-        }
-
-        // Direkter Sprung nach außen.
         if ((oldZone == Zone.HIDDEN || oldZone == Zone.BLUE || oldZone == Zone.YELLOW)
                 && newZone == Zone.OUTSIDE) {
             showPlayer(player);
@@ -215,7 +186,6 @@ public final class BaseHiderPlugin extends JavaPlugin implements Listener, Comma
         return zone == Zone.HIDDEN || zone == Zone.BLUE;
     }
 
-    /** hidePlayer entfernt den Spieler auch aus Tablist und Vanilla-Locator-Bar. */
     private void hidePlayer(Player target) {
         originalTabNames.putIfAbsent(target.getUniqueId(),
                 target.getPlayerListName() == null ? target.getName() : target.getPlayerListName());
